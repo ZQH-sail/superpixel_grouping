@@ -40,15 +40,19 @@ int main( int argc, char** argv)
 
     //color
     int *color;
-    color = new int[superpixels*256];
+    color = new int[superpixels*6];
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
         {
-            
+            int b, g, r;
+            b = bgr[0].row(i).at<uint8_t>(j);
+            g = bgr[1].row(i).at<uint8_t>(j);
+            r = bgr[2].row(i).at<uint8_t>(j);            
         }
     }
 
+    printf("hue:%d\n", get_hue(123,109,72));
     
     //POST
     for( int i = 0; i < img.rows; i++)

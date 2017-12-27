@@ -1,4 +1,5 @@
 #include <opencv2/opencv.hpp>
+#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -98,6 +99,14 @@ int get_hue(int r, int g, int b)
     if( delta < 0.01) return 0;
     if( fr == max)
     {
-        return 60*((int)((fg-fb)/delta) % 6);
+        return 60*fmod(((fg-fb)/delta), 6.0);
+    }
+    if( fg == max)
+    {
+        return 60*(((fb-fr)/delta) + 2);
+    }
+    if( fb == max)
+    {
+        return 60*(((fr-fg)/delta) + 4);
     }
 }
