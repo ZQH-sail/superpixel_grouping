@@ -39,9 +39,10 @@ int main( int argc, char** argv)
     //features.
 
     //color
-    int *color;
-    color = new int[superpixels*30];
-    memset(color, 0, sizeof(int)*superpixels*30);
+    int *color_hist;
+    int color_bins = 30;
+    color_hist = new int[superpixels*color_bins];
+    memset(color_hist, 0, sizeof(int)*superpixels*color_bins);
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
@@ -54,12 +55,50 @@ int main( int argc, char** argv)
             huehuehue = get_hue(r,g,b);
             huehuehue /= 12;
             label = labels.row(i).at<int32_t>(j);
-            color[label*30 + huehuehue]++;
+            color_hist[label*color_bins + huehuehue]++;
         }
     }
 
     //texture
+    Size gabor_window(64,64);
+    vector<Mat> gabors;
+    vector<Mat> responses;
+    int gabor_bins = 30;
+    for( int i = 0; i < gabor_bins; i++)
+    {
+        Mat resp;
+        Mat cur = getGaborKernel(gabor_window, 10, i*(CV_PI/gabor_bins), 3, 1.0, 0, CV_64F);
+        gabors.push_back(cur);
+        filter2D(img, resp, CV_8U, cur);
+        //myshow("asd"+to_string(i), cur);
+        responses.push_back(resp);
+        myshow("gabor resp"+to_string(i), resp);
+    }
+
     
+    int *gabor_hist;
+    gabor_hist = new int[superpixels*gabor_bins];
+    memset(gabor_hist, 0, sizeof(int)*superpixels*gabor_bins);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int label;
+            label = labels.row(i).at<int32_t>(j);
+            for( int k = 0; k < gabor_bins; k++)
+            {
+                double cur_gabor_resp = (double) responses[k].row(i).at<uint8_t>(j) / 255.0;
+                cur_gabor_resp -= 0.5;
+                if( abs(cur_gabor_resp) > 0.25)
+                {
+                    gabor_hist[label*gabor_bins + k]++;
+                }
+            }
+        }
+    }
+
+    //cluster.
+    //TODO.
     
     //POST
     for( int i = 0; i < img.rows; i++)
