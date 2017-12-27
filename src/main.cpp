@@ -40,19 +40,26 @@ int main( int argc, char** argv)
 
     //color
     int *color;
-    color = new int[superpixels*6];
+    color = new int[superpixels*30];
+    memset(color, 0, sizeof(int)*superpixels*30);
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
         {
-            int b, g, r;
+            int b, g, r, huehuehue;
+            int label;
             b = bgr[0].row(i).at<uint8_t>(j);
             g = bgr[1].row(i).at<uint8_t>(j);
-            r = bgr[2].row(i).at<uint8_t>(j);            
+            r = bgr[2].row(i).at<uint8_t>(j);  
+            huehuehue = get_hue(r,g,b);
+            huehuehue /= 12;
+            label = labels.row(i).at<int32_t>(j);
+            color[label*30 + huehuehue]++;
         }
     }
 
-    printf("hue:%d\n", get_hue(123,109,72));
+    //texture
+    
     
     //POST
     for( int i = 0; i < img.rows; i++)
