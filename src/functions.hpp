@@ -81,3 +81,23 @@ Scalar random_color( int seed)
                   (83 + (seed*59)) % 255,
                   (137 + (seed*83)) % 255);
 }
+
+
+int get_hue(int r, int g, int b)
+{
+    float fr, fg, fb;
+    float max, min, delta;
+    fr = r/255.0;
+    fg = g/255.0;
+    fb = b/255.0;
+    max = (fr>fg?fr:fg);
+    max = (max>fb?max:fb);
+    min = (fr<fg?fr:fg);
+    min = (min<fb?min:fb);
+    delta = max-min;
+    if( delta < 0.01) return 0;
+    if( fr == max)
+    {
+        return 60*((int)((fg-fb)/delta) % 6);
+    }
+}

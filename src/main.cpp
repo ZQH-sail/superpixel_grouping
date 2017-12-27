@@ -17,20 +17,40 @@ int main( int argc, char** argv)
     img = imread(argv[1], CV_LOAD_IMAGE_COLOR);
 
     //preprocess
-    GaussianBlur( img, seg_img, Size( 9, 9), 0, 0 );
+    GaussianBlur( img, seg_img, Size( 7, 7), 0, 0 );
 
     //SLIC
     Ptr<SuperpixelSLIC> myslic;
-    myslic = createSuperpixelSLIC(seg_img, SLICO, 10, 50.0f);
-    myslic->iterate(20);
+    myslic = createSuperpixelSLIC(seg_img, SLICO, 10, 220.0f);
+    myslic->iterate(30);
     cv::Mat labels(seg_img.size(), CV_32SC1);
     myslic->getLabels(labels);
     Mat out;
     myslic->getLabelContourMask(out, false);
-    
-    //POST
+
+    //split channels
     std::vector<Mat> bgr; //destination array
     split(img,bgr); //split source  
+
+    //count
+    int superpixels = myslic->getNumberOfSuperpixels();
+    printf("%d\n", superpixels);
+
+    //features.
+
+    //color
+    int *color;
+    color = new int[superpixels*256];
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            
+        }
+    }
+
+    
+    //POST
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
@@ -50,6 +70,8 @@ int main( int argc, char** argv)
             }
         }
     }
+
+    //merge channels
     merge(bgr, img);
     
 
