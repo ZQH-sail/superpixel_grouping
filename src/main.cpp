@@ -72,7 +72,7 @@ int main( int argc, char** argv)
         filter2D(img, resp, CV_8U, cur);
         //myshow("asd"+to_string(i), cur);
         responses.push_back(resp);
-        myshow("gabor resp"+to_string(i), resp);
+        //myshow("gabor resp"+to_string(i), resp);
     }
 
     
@@ -97,8 +97,54 @@ int main( int argc, char** argv)
         }
     }
 
-    //cluster.
-    //TODO.
+    //edge
+    Mat gray_img;
+    cvtColor( img, gray_img, CV_BGR2GRAY );
+    Mat edgex, edgey, abs_edgex, abs_edgey;
+    Sobel(gray_img, edgex, CV_16S, 1, 0);
+    Sobel(gray_img, edgey, CV_16S, 0, 1);
+    convertScaleAbs( edgex, abs_edgex );
+    convertScaleAbs( edgey, abs_edgey );
+    Mat abs_edge;
+    addWeighted( abs_edgex, 0.5, abs_edgey, 0.5, 0, abs_edge);
+
+    myshow("edge", abs_edge);
+
+    //merge
+    int* equivalence;
+    equivalence = new int[superpixels];
+    memset(equivalence, -1, superpixels);
+    for(int i = 0; i < superpixels; i++)
+    {
+        double min_dist = INFINITY;
+        int min_dist_j;
+        for( int j = i+1; j < superpixels; j++)
+        {
+            double dist = 0;
+            for(int k = 0; k < gabor_bins; k++)
+            {
+                dist += abs(
+                        gabor_hist[i*gabor_bins + k] - 
+                        gabor_hist[j*gabor_bins + k]);
+            }
+
+            for(int k = 0; k < color_bins; k++)
+            {
+                dist += abs(
+                        color_hist[i*color_bins + k] - 
+                        color_hist[j*color_bins + k]);
+            }
+
+            if(dist < min_dist)
+            {
+                min_dist = dist;
+                min_dist_j = j;
+            }
+        }
+
+        equivalence[i] = min_dist_j;
+    }
+
     
     //POST
     for( int i = 0; i < img.rows; i++)

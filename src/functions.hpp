@@ -110,3 +110,87 @@ int get_hue(int r, int g, int b)
         return 60*(((fr-fg)/delta) + 4);
     }
 }
+
+
+int* visited;
+double edge_penalty_helper( int a, int b, Mat &labels, Mat &abs_edge, int i = 0, int j = 0)
+{
+    int x1,x2,x3,x4;
+    double x0 = 0;
+    if( visited[i*labels.cols + j] || 
+        i < 0 || 
+        j < 0 || 
+        i >= labels.rows || 
+        j >= labels.cols)
+    {
+        return 0;
+    }
+
+    int me = labels.row(i).at<int32_t>(j);
+    int left, right, up, down;
+    if( j-1 > 0)
+        left = labels.row(i).at<int32_t>(j-1);
+    else
+        left = -1;
+
+    if( j+1 >= labels.cols)
+        right = labels.row(i).at<int32_t>(j+1);
+    else
+        right = -1;
+
+    if( i-1 > 0)    
+        up = labels.row(i-1).at<int32_t>(j);
+    else
+        up = -1;
+    
+    if( i+1 >= labels.rows)    
+        down = labels.row(i+1).at<int32_t>(j);
+    else
+        down = -1;
+
+
+    visited[i*labels.cols + j] = 1;
+    if((me == a && left == b) || (me == b && left == a))
+    {
+        x0 = abs_edge.row(i).at<double>(j);
+    }
+
+    if((me == a && right == b) || (me == b && right == a))
+    {
+        x0 = abs_edge.row(i).at<double>(j);
+    }
+
+    if((me == a && up == b) || (me == b && up == a))
+    {
+        x0 = abs_edge.row(i).at<double>(j);   
+    }
+
+    if((me == a && down == b) || (me == b && down == a))
+    {
+        x0 = abs_edge.row(i).at<double>(j);
+    }
+
+    x1 = edge_penalty_helper( a, b, labels, abs_edge, i-1,j);
+    x2 = edge_penalty_helper( a, b, labels, abs_edge, i+1,j);
+    x3 = edge_penalty_helper( a, b, labels, abs_edge, i,j-1);
+    x4 = edge_penalty_helper( a, b, labels, abs_edge, i,j+1);
+
+    return x0+x1+x2+x3+x4;
+}
+
+double edge_penalty( int a, int b, Mat &labels, Mat &abs_edge)
+{
+    int vsize = labels.cols*labels.rows;
+    double result;
+    visited = new int[vsize];
+    memset(visited, 0, vsize);
+    result = edge_penalty_helper( a, b, labels, abs_edge);
+    
+    delete[] visited;
+    return result;
+}
+
+
+
+
+
