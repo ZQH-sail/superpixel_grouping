@@ -22,12 +22,13 @@ int main( int argc, char** argv)
 
     //SLIC
     Ptr<SuperpixelSLIC> myslic;
-    myslic = createSuperpixelSLIC(seg_img, SLICO, 10, 220.0f);
-    myslic->iterate(30);
+    myslic = createSuperpixelSLIC(seg_img, SLIC, 20, 100.0f);
+    myslic->iterate(90);
     cv::Mat labels(seg_img.size(), CV_32SC1);
     myslic->getLabels(labels);
     Mat out;
     myslic->getLabelContourMask(out, false);
+    Mat labels_init = labels.clone();
 
     //split channels
     std::vector<Mat> bgr; //destination array
@@ -38,12 +39,10 @@ int main( int argc, char** argv)
     printf("%d\n", superpixels);
 
     //merge
-    merge_labels(labels, img, bgr, superpixels,1);
-    merge_labels(labels, img, bgr, superpixels,2);
-    merge_labels(labels, img, bgr, superpixels,3);
-    merge_labels(labels, img, bgr, superpixels,4);
-    merge_labels(labels, img, bgr, superpixels,5);
-    
+    int superpixels_init = superpixels;
+    for( int i = 0; i < 20; i++)
+        merge_labels(labels, img, bgr, superpixels, labels_init, superpixels_init);
+
     Mat new_out = contour_at_sevgilim( labels);
     //POST
     for( int i = 0; i < img.rows; i++)

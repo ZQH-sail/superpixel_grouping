@@ -1,6 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
-
+#define duble double
 using namespace std;
 using namespace cv;
 using namespace cv::ximgproc;
@@ -169,6 +169,51 @@ double edge_penalty( int a, int b, Mat &labels, Mat &abs_edge)
     return result / edge_count;
 }
 
+void all_edge_penalties( vector<uint32_t> &labels, vector<uint8_t> &abs_edge, int rows, int cols, double *penalties, int *adjmat, int superpixels_init)
+{
+    int* edge_counts = new int[superpixels_init*superpixels_init];
+    memset(edge_counts, 0, sizeof(int)*superpixels_init*superpixels_init);
+    double result = 0;
+    for(int i = 1; i < rows-1; i++)
+    {
+        for(int j = 1; j < cols-1; j++)
+        {
+            int me = labels[i*cols + j];
+            int left, right, up, down;
+            left = labels[i*cols + j - 1];
+            right = labels[i*cols + j + 1];
+            up = labels[(i-1)*cols + j];
+            down = labels[(i+1)*cols + j];
+
+            if( me != right)
+            {
+                penalties[me*superpixels_init + right] += abs_edge[i*cols + j];
+                edge_counts[me*superpixels_init + right]++;
+                adjmat[me*superpixels_init + right] = 1;
+            }
+
+            if( me != down)
+            {
+                penalties[me*superpixels_init + down] += abs_edge[i*cols + j];
+                edge_counts[me*superpixels_init + down]++;
+                adjmat[me*superpixels_init + down] = 1;
+            }
+        }
+    }
+
+    for(int i = 0; i < superpixels_init*superpixels_init; i++)
+    {
+        if(edge_counts[i])
+        {
+            penalties[i] /= edge_counts[i];
+        }
+        else
+        {
+            penalties[i] = 0;
+        }
+    }
+
+}
 
 double edge_penalty( int a, int b, vector<uint32_t> &labels, vector<uint8_t> &abs_edge, int rows, int cols)
 {
@@ -270,7 +315,6 @@ void refresh_labels(Mat &labels, int &superpixels)
         if(visited[i])
         {
             visited[i] = count++;
-            printf("%d:%d\n", i, visited[i]);
         }
 
     }
@@ -286,14 +330,25 @@ void refresh_labels(Mat &labels, int &superpixels)
     superpixels = count;
 }
 
-void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixels, int iter)
+void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixels, Mat &labels_init, int superpixels_init)
 {
-    if(superpixels < 3) return;
+    if(superpixels < 10) return;
+    vector<set<int> > sets(superpixels);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int set_label = labels.row(i).at<uint32_t>(j);
+            int superpix_label = labels.row(i).at<uint32_t>(j);
+            sets[set_label].insert(superpix_label);
+        }
+    }
+
     //color
     int *color_hist;
     int color_bins = 30;
-    color_hist = new int[superpixels*color_bins];
-    memset(color_hist, 0, sizeof(int)*superpixels*color_bins);
+    color_hist = new int[superpixels_init*color_bins];
+    memset(color_hist, 0, sizeof(int)*superpixels_init*color_bins);
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
@@ -305,10 +360,11 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
             r = bgr[2].row(i).at<uint8_t>(j);  
             huehuehue = get_hue(r,g,b);
             huehuehue /= 12;
-            label = labels.row(i).at<int32_t>(j);
+            label = labels_init.row(i).at<int32_t>(j);
             color_hist[label*color_bins + huehuehue]++;
         }
     }
+
 
     //texture
     Size gabor_window(64,64);
@@ -327,14 +383,14 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
     }
 
     int *gabor_hist;
-    gabor_hist = new int[superpixels*gabor_bins];
-    memset(gabor_hist, 0, sizeof(int)*superpixels*gabor_bins);
+    gabor_hist = new int[superpixels_init*gabor_bins];
+    memset(gabor_hist, 0, sizeof(int)*superpixels_init*gabor_bins);
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
         {
             int label;
-            label = labels.row(i).at<int32_t>(j);
+            label = labels_init.row(i).at<int32_t>(j);
             for( int k = 0; k < gabor_bins; k++)
             {
                 double cur_gabor_resp = (double) responses[k].row(i).at<uint8_t>(j) / 255.0;
@@ -358,8 +414,8 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
     Mat abs_edge;
     addWeighted( abs_edgex, 0.5, abs_edgey, 0.5, 0, abs_edge);
 
-    myshow("edge", abs_edge);
-    printf("%d\n", abs_edge.type());
+    //myshow("edge", abs_edge);
+    //printf("%d\n", abs_edge.type());
 
     //center of MASS
     double *centerx, *centery;
@@ -390,6 +446,7 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         centery[i] /= countpixels[i];
     }
 
+
     double min_graph_dist = INFINITY;
     for(int i = 0; i < superpixels; i++)
     {
@@ -407,70 +464,119 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         }
     }
 
-    vector<uint32_t> labels_vec;
+    vector<uint32_t> labels_init_vec;
     vector<uint8_t> abs_edge_vec;
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
         {
-            labels_vec.push_back( labels.row(i).at<uint32_t>(j));
+            labels_init_vec.push_back( labels_init.row(i).at<uint32_t>(j));
             abs_edge_vec.push_back( abs_edge.row(i).at<uint8_t>(j));
         }
     }
+
+    duble* penalties = new duble[superpixels_init*superpixels_init];
+    int* adjacency_matrix = new int[superpixels_init*superpixels_init];
+    memset(adjacency_matrix, 0, sizeof(int)*superpixels_init*superpixels_init);
+    memset(penalties, 0, sizeof(duble)*superpixels_init*superpixels_init);
+    
+    all_edge_penalties( labels_init_vec, abs_edge_vec, img.rows, img.cols, penalties, adjacency_matrix, superpixels_init);
     
     //merge
-    //TODO: EQUIVALENCE SET ŞEYSİ YAPILACAK
     int* equivalence;
     equivalence = new int[superpixels];
     for(int i = 0; i < superpixels; i++)
     {
         double min_dist = INFINITY;
-        int min_dist_j =0;
+        int min_dist_j = i;
+
         for( int j = 0; j < superpixels; j++)
         {
             if(j == i) continue;
-            double dist = 0;
+            double Dct = 0;
+            double Dtotal = 0;
             double graph_dist_x = abs(centerx[i]-centerx[j]);
             double graph_dist_y = abs(centery[i]-centery[j]);
             double graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
 
-            if(graph_dist < (3500*250)/superpixels)
+
+            double Ti = sets[i].size();
+            double Tj = sets[j].size();
+            double alpha = log2((Ti + Tj) / (double) superpixels_init);
+            double ro = 1/(1 + exp((6 - alpha)/0.1 ));
+
+
+            double Dmax = 0;
+            double Dmin = INFINITY;
+
+                
+            for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
             {
-                for(int k = 0; k < gabor_bins; k++)
+                for(std::set<int>::iterator jit=sets[j].begin(); jit!=sets[j].end(); ++jit)  
                 {
-                    double gabor_dist = abs(
-                                        gabor_hist[i*gabor_bins + k] - 
-                                        gabor_hist[j*gabor_bins + k]);
-                    dist += 50*gabor_dist*gabor_dist/sqrt(superpixels);
+                    double Dct = 0;
+
+                    for(int k = 0; k < gabor_bins; k++)
+                    {
+                        double gabor_dist = abs(
+                                            gabor_hist[(*it)*gabor_bins + k] - 
+                                            gabor_hist[(*jit)*gabor_bins + k]);
+                        Dct += gabor_dist;
+                    }
+
+                    for(int k = 0; k < color_bins; k++)
+                    {
+                        double color_dist = abs(
+                                            color_hist[(*it)*color_bins + k] - 
+                                            color_hist[(*jit)*color_bins + k]);
+                        Dct += color_dist;
+                    }
+
+                    if( Dct>Dmax)
+                    {
+                        Dmax = Dct;
+                    }
+
+                    if( Dct<Dmin)
+                    {
+                        Dmin = Dct;
+                    }
                 }
-
-                for(int k = 0; k < color_bins; k++)
-                {
-                    double color_dist = abs(
-                                        color_hist[i*color_bins + k] - 
-                                        color_hist[j*color_bins + k]);
-
-                    dist += 50*color_dist*color_dist/sqrt(superpixels);
-                }
-                double edge_dist;
-                edge_dist = edge_penalty( i, j, labels_vec, abs_edge_vec, labels.rows, labels.cols);
-
-                dist += (gabor_bins+color_bins)*graph_dist*superpixels;
-                dist += superpixels*superpixels*edge_dist/3500;
             }
+
+            double edge_dist = 0;
+            //edge_dist = edge_penalty( i, j, labels_vec, abs_edge_vec, labels.rows, labels.cols);
+            int count = 0;
+            for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
+            {
+                for(std::set<int>::iterator jit=sets[j].begin(); jit!=sets[j].end(); ++jit)  
+                {
+                    if( adjacency_matrix[(*it)*superpixels_init + *jit])
+                    {
+                        count++;
+                        edge_dist += penalties[(*it)*superpixels_init + *jit] / 255;
+                    }
+                }
+            }
+            if( count)
+                edge_dist /= count;
             else
-            {
-                dist = -1;
-            }
+                edge_dist = 0;
+
+            double DL = Dmax + edge_dist + graph_dist;
+            double DH = Dmin + 0.6*graph_dist;
             
-            dist = sqrt(dist);
-            if(dist < min_dist && dist > 0)
+            Dtotal = ro*DL + (1 - ro)*DH + 2*(countpixels[i] + countpixels[j]);
+        
+            
+            if(Dtotal < min_dist && Dtotal > 0)
             {
-                min_dist = dist;
+                min_dist = Dtotal;
                 min_dist_j = j;
             }
         }
-        printf("%d/%d\n",i,superpixels);
+        if(i%100 == 0) printf("%d/%d\n",i,superpixels);
+
         equivalence[i] = min_dist_j;
     }
 
@@ -491,9 +597,9 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         }
     }
 
-        printf("neydi %d\n",superpixels);
+    printf("neydi %d\n",superpixels);
     refresh_labels(labels, superpixels);
-        printf("ne oldu %d\n",superpixels);
+    printf("ne oldu %d\n",superpixels);
 }
 
 
