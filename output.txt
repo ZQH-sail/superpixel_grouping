@@ -1,0 +1,504 @@
+./data/000012.jpg
+detected: 1
+objects: 1
+000012.png
+./data/000017.jpg
+detected: 0
+objects: 1
+000017.png
+./data/000019.jpg
+detected: 0
+objects: 2
+000019.png
+./data/000026.jpg
+./data/000034.jpg
+detected: 0
+objects: 2
+000034.png
+./data/000036.jpg
+detected: 0
+objects: 1
+000036.png
+./data/000039.jpg
+./data/000095.jpg
+detected: 0
+objects: 2
+000095.png
+./data/000120.jpg
+./data/000150.jpg
+detected: 1
+objects: 1
+000150.png
+./data/000153.jpg
+./data/000154.jpg
+./data/000198.jpg
+./data/000215.jpg
+./data/000220.jpg
+./data/000225.jpg
+./data/000232.jpg
+./data/000233.jpg
+./data/000245.jpg
+detected: 0
+objects: 1
+000245.png
+./data/000246.jpg
+./data/000275.jpg
+detected: 0
+objects: 1
+000275.png
+./data/000289.jpg
+./data/000304.jpg
+detected: 0
+objects: 1
+000304.png
+./data/000318.jpg
+detected: 0
+objects: 2
+000318.png
+./data/000332.jpg
+./data/000334.jpg
+detected: 0
+objects: 1
+000334.png
+./data/000338.jpg
+detected: 1
+objects: 1
+000338.png
+./data/000343.jpg
+./data/000355.jpg
+./data/000359.jpg
+./data/000373.jpg
+./data/000396.jpg
+detected: 0
+objects: 1
+000396.png
+./data/000407.jpg
+./data/000450.jpg
+detected: 0
+objects: 1
+000450.png
+./data/000461.jpg
+detected: 1
+objects: 1
+000461.png
+./data/000464.jpg
+./data/000474.jpg
+./data/000482.jpg
+./data/000483.jpg
+./data/000486.jpg
+detected: 0
+objects: 1
+000486.png
+./data/000513.jpg
+./data/000519.jpg
+./data/000522.jpg
+detected: 0
+objects: 1
+000522.png
+./data/000523.jpg
+detected: 0
+objects: 1
+000523.png
+./data/000537.jpg
+detected: 0
+objects: 1
+000537.png
+./data/000540.jpg
+./data/000581.jpg
+./data/000588.jpg
+./data/000672.jpg
+detected: 0
+objects: 1
+000672.png
+./data/000675.jpg
+detected: 1
+objects: 3
+000675.png
+./data/000676.jpg
+./data/000695.jpg
+detected: 0
+objects: 3
+000695.png
+./data/000710.jpg
+./data/000754.jpg
+./data/000770.jpg
+./data/000774.jpg
+./data/000777.jpg
+detected: 1
+objects: 1
+000777.png
+./data/000787.jpg
+detected: 1
+objects: 1
+000787.png
+./data/000791.jpg
+detected: 0
+objects: 1
+000791.png
+./data/000823.jpg
+./data/000831.jpg
+./data/000879.jpg
+./data/000947.jpg
+./data/000971.jpg
+./data/000993.jpg
+detected: 0
+objects: 2
+000993.png
+./data/001062.jpg
+detected: 0
+objects: 1
+001062.png
+./data/001073.jpg
+detected: 0
+objects: 6
+001073.png
+./data/001112.jpg
+./data/001130.jpg
+./data/001156.jpg
+./data/001172.jpg
+detected: 0
+objects: 1
+001172.png
+./data/001182.jpg
+detected: 0
+objects: 2
+001182.png
+./data/001192.jpg
+./data/001209.jpg
+detected: 0
+objects: 1
+001209.png
+./data/001221.jpg
+detected: 1
+objects: 1
+001221.png
+./data/001236.jpg
+detected: 0
+objects: 1
+001236.png
+./data/001294.jpg
+detected: 0
+objects: 4
+001294.png
+./data/001299.jpg
+detected: 0
+objects: 3
+001299.png
+./data/001314.jpg
+detected: 0
+objects: 1
+001314.png
+./data/001323.jpg
+./data/001420.jpg
+./data/001467.jpg
+./data/001468.jpg
+detected: 0
+objects: 3
+001468.png
+./data/001484.jpg
+detected: 0
+objects: 1
+001484.png
+./data/001610.jpg
+./data/001628.jpg
+./data/001699.jpg
+./data/001713.jpg
+detected: 0
+objects: 1
+001713.png
+./data/001714.jpg
+./data/001714_out.jpg
+detected: 0
+objects: 1
+001714.png
+./data/001775.jpg
+./data/001807.jpg
+./data/001888.jpg
+./data/001972.jpg
+./data/001985.jpg
+detected: 0
+objects: 1
+001985.png
+./data/002011.jpg
+detected: 0
+objects: 1
+002011.png
+./data/002034.jpg
+./data/002083.jpg
+detected: 0
+objects: 1
+002083.png
+./data/002132.jpg
+detected: 0
+objects: 1
+002132.png
+./data/002267.jpg
+./data/002315.jpg
+detected: 0
+objects: 1
+002315.png
+./data/002321.jpg
+detected: 1
+objects: 1
+002321.png
+./data/002345.jpg
+./data/002364.jpg
+./data/002369.jpg
+./data/002374.jpg
+detected: 1
+objects: 2
+002374.png
+./data/002392.jpg
+detected: 0
+objects: 1
+002392.png
+./data/002407.jpg
+detected: 0
+objects: 1
+002407.png
+./data/002450.jpg
+detected: 0
+objects: 1
+002450.png
+./data/002461.jpg
+./data/002466.jpg
+detected: 1
+objects: 1
+002466.png
+./data/002480.jpg
+./data/002502.jpg
+detected: 0
+objects: 1
+002502.png
+./data/002537.jpg
+./data/002549.jpg
+./data/002593.jpg
+detected: 0
+objects: 1
+002593.png
+./data/002615.jpg
+detected: 0
+objects: 2
+002615.png
+./data/002634.jpg
+./data/002683.jpg
+./data/002763.jpg
+./data/002766.jpg
+detected: 1
+objects: 1
+002766.png
+./data/002796.jpg
+detected: 0
+objects: 1
+002796.png
+./data/002842.jpg
+detected: 0
+objects: 1
+002842.png
+./data/003021.jpg
+./data/003027.jpg
+./data/003105.jpg
+detected: 0
+objects: 2
+003105.png
+./data/003161.jpg
+detected: 0
+objects: 5
+003161.png
+./data/003311.jpg
+./data/003429.jpg
+detected: 0
+objects: 1
+003429.png
+./data/003439.jpg
+./data/003564.jpg
+./data/003640.jpg
+detected: 0
+objects: 1
+003640.png
+./data/003705.jpg
+detected: 0
+objects: 1
+003705.png
+./data/003714.jpg
+detected: 0
+objects: 1
+003714.png
+./data/003735.jpg
+./data/003772.jpg
+./data/003788.jpg
+detected: 0
+objects: 1
+003788.png
+./data/003814.jpg
+./data/003970.jpg
+./data/004035.jpg
+detected: 0
+objects: 2
+004035.png
+./data/004163.jpg
+./data/004212.jpg
+./data/004274.jpg
+detected: 0
+objects: 1
+004274.png
+./data/004312.jpg
+./data/004441.jpg
+detected: 0
+objects: 1
+004441.png
+./data/004446.jpg
+./data/004654.jpg
+detected: 0
+objects: 1
+004654.png
+./data/004792.jpg
+detected: 1
+objects: 1
+004792.png
+./data/004826.jpg
+detected: 0
+objects: 1
+004826.png
+./data/004885.jpg
+detected: 0
+objects: 1
+004885.png
+./data/004958.jpg
+./data/005027.jpg
+detected: 0
+objects: 1
+005027.png
+./data/005068.jpg
+detected: 0
+objects: 2
+005068.png
+./data/005128.jpg
+./data/005217.jpg
+./data/005288.jpg
+detected: 0
+objects: 1
+005288.png
+./data/005320.jpg
+detected: 0
+objects: 1
+005320.png
+./data/005418.jpg
+detected: 0
+objects: 1
+005418.png
+./data/005705.jpg
+detected: 0
+objects: 1
+005705.png
+./data/005843.jpg
+./data/005906.jpg
+detected: 0
+objects: 1
+005906.png
+./data/006098.jpg
+detected: 0
+objects: 1
+006098.png
+./data/006136.jpg
+detected: 0
+objects: 1
+006136.png
+./data/006218.jpg
+./data/006357.jpg
+detected: 0
+objects: 3
+006357.png
+./data/006404.jpg
+./data/006436.jpg
+detected: 1
+objects: 1
+006436.png
+./data/006534.jpg
+detected: 0
+objects: 1
+006534.png
+./data/006821.jpg
+detected: 0
+objects: 5
+006821.png
+./data/006842.jpg
+./data/006899.jpg
+./data/007052.jpg
+detected: 0
+objects: 1
+007052.png
+./data/007095.jpg
+detected: 0
+objects: 1
+007095.png
+./data/007125.jpg
+detected: 0
+objects: 1
+007125.png
+./data/007230.jpg
+./data/007236.jpg
+./data/007271.jpg
+detected: 0
+objects: 1
+007271.png
+./data/007437.jpg
+detected: 1
+objects: 1
+007437.png
+./data/007650.jpg
+detected: 0
+objects: 4
+007650.png
+./data/007685.jpg
+./data/007729.jpg
+./data/007736.jpg
+./data/008098.jpg
+detected: 0
+objects: 6
+008098.png
+./data/008112.jpg
+detected: 0
+objects: 2
+008112.png
+./data/008306.jpg
+detected: 0
+objects: 2
+008306.png
+./data/008315.jpg
+./data/008349.jpg
+detected: 0
+objects: 1
+008349.png
+./data/008360.jpg
+detected: 0
+objects: 2
+008360.png
+./data/008422.jpg
+detected: 0
+objects: 3
+008422.png
+./data/008725.jpg
+./data/008747.jpg
+./data/008837.jpg
+./data/008955.jpg
+./data/009032.jpg
+detected: 1
+objects: 2
+009032.png
+./data/009094.jpg
+detected: 0
+objects: 1
+009094.png
+./data/009155.jpg
+./data/009161.jpg
+./data/009192.jpg
+detected: 0
+objects: 1
+009192.png
+./data/009484.jpg
+./data/009576.jpg
+detected: 0
+objects: 1
+009576.png
+./data/009611.jpg

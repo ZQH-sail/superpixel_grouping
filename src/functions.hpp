@@ -111,6 +111,37 @@ int get_hue(int r, int g, int b)
     }
 }
 
+int get_saturation(int r, int g, int b)
+{
+    float fr, fg, fb;
+    float max, min, delta;
+    fr = r/255.0;
+    fg = g/255.0;
+    fb = b/255.0;
+    max = (fr>fg?fr:fg);
+    max = (max>fb?max:fb);
+    min = (fr<fg?fr:fg);
+    min = (min<fb?min:fb);
+    delta = max-min;
+    
+    return delta==0?0:delta/max;
+}
+
+int get_value(int r, int g, int b)
+{  
+    float fr, fg, fb;
+    float max, min, delta;
+    fr = r/255.0;
+    fg = g/255.0;
+    fb = b/255.0;
+    max = (fr>fg?fr:fg);
+    max = (max>fb?max:fb);
+    min = (fr<fg?fr:fg);
+    min = (min<fb?min:fb);
+    return max;
+}
+
+
 double edge_penalty( int a, int b, Mat &labels, Mat &abs_edge)
 {
     int vsize = labels.cols*labels.rows;
@@ -326,12 +357,13 @@ void refresh_labels(Mat &labels, int &superpixels)
             labels.row(i).at<uint32_t>(j) = visited[labels.row(i).at<uint32_t>(j)];
         }
     }
-    printf("%d\n", count);
+    //printf("%d\n", count);
     superpixels = count;
 }
 
-void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixels, Mat &labels_init, int superpixels_init)
+void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixels, Mat &labels_init, int superpixels_init, Point &p1, Point &p2)
 {
+
     if(superpixels < 10) return;
     vector<set<int> > sets(superpixels);
     for( int i = 0; i < img.rows; i++)
@@ -346,7 +378,8 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
 
     //color
     int *color_hist;
-    int color_bins = 30;
+    int temp_bins = 20;
+    int color_bins = temp_bins*3;
     color_hist = new int[superpixels_init*color_bins];
     memset(color_hist, 0, sizeof(int)*superpixels_init*color_bins);
     for( int i = 0; i < img.rows; i++)
@@ -359,9 +392,12 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
             g = bgr[1].row(i).at<uint8_t>(j);
             r = bgr[2].row(i).at<uint8_t>(j);  
             huehuehue = get_hue(r,g,b);
-            huehuehue /= 12;
+            int sat = get_saturation(r,g,b);
+            int val = get_value(r,g,b);
             label = labels_init.row(i).at<int32_t>(j);
             color_hist[label*color_bins + huehuehue]++;
+            color_hist[label*color_bins + temp_bins + sat]++;
+            color_hist[label*color_bins + 2*temp_bins + val]++;
         }
     }
 
@@ -370,8 +406,10 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
     Size gabor_window(64,64);
     vector<Mat> gabors;
     vector<Mat> responses;
-    int gabor_bins = 30;
-    for( int i = 0; i < gabor_bins; i++)
+    int orientations = 8;
+    int gbins = 10;
+    int gabor_bins = orientations*gbins*3;
+    for( int i = 0; i < orientations; i++)
     {
         Mat resp;
         Mat cur = getGaborKernel(gabor_window, 10, i*(CV_PI/gabor_bins), 3, 1.0, 0, CV_64F);
@@ -382,6 +420,14 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         //myshow("gabor resp"+to_string(i), resp);
     }
 
+    vector<std::vector<Mat> > bgr_gabors; //destination array
+    for(int i = 0; i < orientations; i++)
+    {
+        std::vector<Mat> bgr_gabor;
+        split(responses[i],bgr_gabor); //split source  
+        bgr_gabors.push_back(bgr_gabor);
+    }
+
     int *gabor_hist;
     gabor_hist = new int[superpixels_init*gabor_bins];
     memset(gabor_hist, 0, sizeof(int)*superpixels_init*gabor_bins);
@@ -389,16 +435,23 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
     {
         for( int j = 0; j < img.cols; j++)
         {
-            int label;
-            label = labels_init.row(i).at<int32_t>(j);
-            for( int k = 0; k < gabor_bins; k++)
+            int anan;
+            anan = labels_init.row(i).at<int32_t>(j);
+            for( int k = 0; k < orientations; k++)
             {
-                double cur_gabor_resp = (double) responses[k].row(i).at<uint8_t>(j) / 255.0;
-                cur_gabor_resp -= 0.5;
-                if( abs(cur_gabor_resp) > 0.25)
-                {
-                    gabor_hist[label*gabor_bins + k]++;
-                }
+                std::vector<Mat> bgr_gabor = bgr_gabors[k];
+                //b
+                double cur_gabor_resp_b = (double) bgr_gabor[0].row(i).at<uint8_t>(j) / 255.0;
+                cur_gabor_resp_b *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + (int)cur_gabor_resp_b]++;
+                //g
+                double cur_gabor_resp_g = (double) bgr_gabor[1].row(i).at<uint8_t>(j) / 255.0;
+                cur_gabor_resp_g *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + orientations*gbins + (int)cur_gabor_resp_g]++;
+                //r
+                double cur_gabor_resp_r = (double) bgr_gabor[2].row(i).at<uint8_t>(j) / 255.0;
+                cur_gabor_resp_r *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + 2*orientations*gbins + (int)cur_gabor_resp_r]++;
             }
         }
     }
@@ -418,15 +471,15 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
     //printf("%d\n", abs_edge.type());
 
     //center of MASS
-    double *centerx, *centery;
-    int *countpixels;
+    double *centerx, *centery, *centerx_init, *centery_init;
+    int *countpixels, *countpixels_init;
 
-    centerx = new double[superpixels];
-    centery = new double[superpixels];
-    countpixels = new int[superpixels];
-    memset(centerx, 0, sizeof(double)*superpixels);
-    memset(centery, 0, sizeof(double)*superpixels);
-    memset(countpixels, 0, sizeof(int)*superpixels);
+    centerx = new double[superpixels ];
+    centery = new double[superpixels ];
+    countpixels = new int[superpixels ];
+    memset(centerx, 0, sizeof(double)*superpixels );
+    memset(centery, 0, sizeof(double)*superpixels );
+    memset(countpixels, 0, sizeof(int)*superpixels );
 
     for( int i = 0; i < img.rows; i++)
     {
@@ -446,23 +499,31 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         centery[i] /= countpixels[i];
     }
 
+    centerx_init = new double[superpixels_init];
+    centery_init = new double[superpixels_init];
+    countpixels_init = new int[superpixels_init];
+    memset(centerx_init, 0, sizeof(double)*superpixels_init);
+    memset(centery_init, 0, sizeof(double)*superpixels_init);
+    memset(countpixels_init, 0, sizeof(int)*superpixels_init);
 
-    double min_graph_dist = INFINITY;
-    for(int i = 0; i < superpixels; i++)
+    for( int i = 0; i < img.rows; i++)
     {
-        for( int j = 0; j < superpixels; j++)
+        for( int j = 0; j < img.cols; j++)
         {
-            if(j == i) continue;
-            double graph_dist_x = abs(centerx[i]-centerx[j]);
-            double graph_dist_y = abs(centery[i]-centery[j]);
-            double graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
-
-            if(graph_dist < min_graph_dist)
-            {
-                min_graph_dist = graph_dist;
-            }
+            centerx_init[labels_init.row(i).at<int32_t>(j)] += j;
+            centery_init[labels_init.row(i).at<int32_t>(j)] += i;
+            
+            countpixels_init[labels_init.row(i).at<int32_t>(j)]++;
         }
     }
+    
+    for(int i = 0; i < superpixels_init; i++)
+    {
+        centerx_init[i] /= countpixels_init[i];
+        centery_init[i] /= countpixels_init[i];
+    }
+
+
 
     vector<uint32_t> labels_init_vec;
     vector<uint8_t> abs_edge_vec;
@@ -495,21 +556,25 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
             if(j == i) continue;
             double Dct = 0;
             double Dtotal = 0;
-            double graph_dist_x = abs(centerx[i]-centerx[j]);
-            double graph_dist_y = abs(centery[i]-centery[j]);
-            double graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
+           
 
 
             double Ti = sets[i].size();
             double Tj = sets[j].size();
-            double alpha = log2((Ti + Tj) / (double) superpixels_init);
+            double alpha = -log2((Ti + Tj) / (double) superpixels_init);
             double ro = 1/(1 + exp((6 - alpha)/0.1 ));
 
 
             double Dmax = 0;
             double Dmin = INFINITY;
 
-                
+        
+            double graph_dist_x = abs(centerx[i]-centerx[j]);
+            double graph_dist_y = abs(centery[i]-centery[j]);
+
+            double graph_dist = 0;
+            graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
+
             for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
             {
                 for(std::set<int>::iterator jit=sets[j].begin(); jit!=sets[j].end(); ++jit)  
@@ -545,7 +610,6 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
             }
 
             double edge_dist = 0;
-            //edge_dist = edge_penalty( i, j, labels_vec, abs_edge_vec, labels.rows, labels.cols);
             int count = 0;
             for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
             {
@@ -564,10 +628,10 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
                 edge_dist = 0;
 
             double DL = Dmax + edge_dist + graph_dist;
-            double DH = Dmin + 0.6*graph_dist;
+            double DH = Dmin + 0.4*graph_dist;
             
             Dtotal = ro*DL + (1 - ro)*DH + 2*(countpixels[i] + countpixels[j]);
-        
+            Dtotal = Dmin;
             
             if(Dtotal < min_dist && Dtotal > 0)
             {
@@ -575,17 +639,18 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
                 min_dist_j = j;
             }
         }
-        if(i%100 == 0) printf("%d/%d\n",i,superpixels);
+        //if(i%100 == 0) printf("%d/%d\n",i,superpixels);
 
         equivalence[i] = min_dist_j;
     }
 
+    /*
     for(int i = 0; i < superpixels; i++)
     {
         if(equivalence[i] == equivalence[ equivalence[i] ])
             printf("<<<%d \n", i);
     }
-
+*/
     for( int i = 0; i < img.rows; i++)
     {
         for( int j = 0; j < img.cols; j++)
@@ -597,9 +662,33 @@ void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixel
         }
     }
 
-    printf("neydi %d\n",superpixels);
+
+
+    //printf("neydi %d\n",superpixels);
     refresh_labels(labels, superpixels);
-    printf("ne oldu %d\n",superpixels);
+    //printf("ne oldu %d\n",superpixels);
+
+    double centerest_dist = INFINITY;
+    int centerest_i = 0;
+    for(int i = 0; i < superpixels; i++)
+    {
+        double graph_dist_x = abs(centerx[i]-img.cols/2);
+        double graph_dist_y = abs(centery[i]-img.rows/2);
+
+        double graph_dist = 0;
+        graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
+        if(graph_dist < centerest_dist)
+        {
+            centerest_dist = graph_dist;
+            centerest_i = i;
+        }
+    }
+
+    p1.x = centerx[centerest_i] - img.cols / 5;
+    p1.y = centery[centerest_i] - img.rows / 5;
+
+    p2.x = centerx[centerest_i] + img.cols / 5;
+    p2.y = centery[centerest_i] + img.rows / 5;
 }
 
 
