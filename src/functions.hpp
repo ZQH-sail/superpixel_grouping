@@ -111,86 +111,390 @@ int get_hue(int r, int g, int b)
     }
 }
 
-
-int* visited;
-double edge_penalty_helper( int a, int b, Mat &labels, Mat &abs_edge, int i = 0, int j = 0)
-{
-    int x1,x2,x3,x4;
-    double x0 = 0;
-    if( visited[i*labels.cols + j] || 
-        i < 0 || 
-        j < 0 || 
-        i >= labels.rows || 
-        j >= labels.cols)
-    {
-        return 0;
-    }
-
-    int me = labels.row(i).at<int32_t>(j);
-    int left, right, up, down;
-    if( j-1 > 0)
-        left = labels.row(i).at<int32_t>(j-1);
-    else
-        left = -1;
-
-    if( j+1 >= labels.cols)
-        right = labels.row(i).at<int32_t>(j+1);
-    else
-        right = -1;
-
-    if( i-1 > 0)    
-        up = labels.row(i-1).at<int32_t>(j);
-    else
-        up = -1;
-    
-    if( i+1 >= labels.rows)    
-        down = labels.row(i+1).at<int32_t>(j);
-    else
-        down = -1;
-
-
-    visited[i*labels.cols + j] = 1;
-    if((me == a && left == b) || (me == b && left == a))
-    {
-        x0 = abs_edge.row(i).at<double>(j);
-    }
-
-    if((me == a && right == b) || (me == b && right == a))
-    {
-        x0 = abs_edge.row(i).at<double>(j);
-    }
-
-    if((me == a && up == b) || (me == b && up == a))
-    {
-        x0 = abs_edge.row(i).at<double>(j);   
-    }
-
-    if((me == a && down == b) || (me == b && down == a))
-    {
-        x0 = abs_edge.row(i).at<double>(j);
-    }
-
-    x1 = edge_penalty_helper( a, b, labels, abs_edge, i-1,j);
-    x2 = edge_penalty_helper( a, b, labels, abs_edge, i+1,j);
-    x3 = edge_penalty_helper( a, b, labels, abs_edge, i,j-1);
-    x4 = edge_penalty_helper( a, b, labels, abs_edge, i,j+1);
-
-    return x0+x1+x2+x3+x4;
-}
-
 double edge_penalty( int a, int b, Mat &labels, Mat &abs_edge)
 {
     int vsize = labels.cols*labels.rows;
-    double result;
-    visited = new int[vsize];
-    memset(visited, 0, vsize);
-    result = edge_penalty_helper( a, b, labels, abs_edge);
-    
-    delete[] visited;
-    return result;
+    int edge_count = 0;
+    double result = 0;
+    for(int i = 0; i < labels.rows; i++)
+    {
+        for(int j = 0; j < labels.cols; j++)
+        {
+            int me = labels.row(i).at<int32_t>(j);
+            int left, right, up, down;
+
+            if( j-1 >= 0)
+                left = labels.row(i).at<int32_t>(j-1);
+            else
+                left = -1;
+
+            if( j+1 < labels.cols)
+                right = labels.row(i).at<int32_t>(j+1);
+            else
+                right = -1;
+
+            if( i-1 >= 0)    
+                up = labels.row(i-1).at<int32_t>(j);
+            else
+                up = -1;
+            
+            if( i+1 < labels.rows)    
+                down = labels.row(i+1).at<int32_t>(j);
+            else
+                down = -1;
+
+            if((me == a && left == b) || (me == b && left == a))
+            {
+                result += abs_edge.row(i).at<uint8_t>(j);
+                edge_count++;
+            }
+            else if((me == a && right == b) || (me == b && right == a))
+            {
+                result += abs_edge.row(i).at<uint8_t>(j);
+                edge_count++;
+            }
+            else if((me == a && up == b) || (me == b && up == a))
+            {
+                result += abs_edge.row(i).at<uint8_t>(j);   
+                edge_count++;
+            }
+            else if((me == a && down == b) || (me == b && down == a))
+            {
+                result += abs_edge.row(i).at<uint8_t>(j);
+                edge_count++;
+            }
+
+        }
+    }
+    return result / edge_count;
 }
 
 
+double edge_penalty( int a, int b, vector<uint32_t> &labels, vector<uint8_t> &abs_edge, int rows, int cols)
+{
+    int edge_count = 0;
+    double result = 0;
+    for(int i = 0; i < rows; i++)
+    {
+        for(int j = 0; j < cols; j++)
+        {
+            int me = labels[i*cols + j];
+            int left, right, up, down;
+
+            if( j-1 >= 0)
+                left = labels[i*cols + j - 1];
+            else
+                left = -1;
+
+            if( j+1 < cols)
+                right = labels[i*cols + j + 1];
+            else
+                right = -1;
+
+            if( i-1 >= 0)    
+                up = labels[(i-1)*cols + j];
+            else
+                up = -1;
+            
+            if( i+1 < rows)    
+                down = labels[(i+1)*cols + j];
+            else
+                down = -1;
+
+            if((me == a && left == b) || (me == b && left == a))
+            {
+                result += abs_edge[i*cols + j];
+                edge_count++;
+            }
+            else if((me == a && right == b) || (me == b && right == a))
+            {
+                result += abs_edge[i*cols + j];
+                edge_count++;
+            }
+            else if((me == a && up == b) || (me == b && up == a))
+            {
+                result += abs_edge[i*cols + j];   
+                edge_count++;
+            }
+            else if((me == a && down == b) || (me == b && down == a))
+            {
+                result += abs_edge[i*cols + j];
+                edge_count++;
+            }
+
+        }
+    }
+    return result / edge_count;
+}
+
+
+Mat contour_at_sevgilim( Mat &m)
+{
+    Mat result( m.rows, m.cols, CV_8S);
+    result = 0*result;
+    for(int i = 0; i < m.rows-1; i++)
+    {
+        for(int j = 0; j < m.cols-1; j++)
+        {
+            if(m.row(i).at<int32_t>(j) != m.row(i).at<int32_t>(j+1))
+            {
+                result.row(i).at<int8_t>(j) = 1;
+            }
+
+            if(m.row(i).at<int32_t>(j) != m.row(i+1).at<int32_t>(j))
+            {
+                result.row(i).at<int8_t>(j) = 1;
+            }
+        }
+    }
+
+    return result;
+}
+
+void refresh_labels(Mat &labels, int &superpixels)
+{
+    int* visited = new int[superpixels];
+    memset(visited, 0, sizeof(int)*superpixels);
+
+    for( int i = 0; i < labels.rows; i++)
+    {
+        for( int j = 0; j < labels.cols; j++)
+        {
+            visited[labels.row(i).at<uint32_t>(j)] = 1;
+        }
+    }
+
+    int count = 0;
+    for( int i = 0; i < superpixels; i++)
+    {
+        if(visited[i])
+        {
+            visited[i] = count++;
+            printf("%d:%d\n", i, visited[i]);
+        }
+
+    }
+
+    for( int i = 0; i < labels.rows; i++)
+    {
+        for( int j = 0; j < labels.cols; j++)
+        {
+            labels.row(i).at<uint32_t>(j) = visited[labels.row(i).at<uint32_t>(j)];
+        }
+    }
+    printf("%d\n", count);
+    superpixels = count;
+}
+
+void merge_labels( Mat &labels, Mat &img, std::vector<Mat> &bgr, int &superpixels, int iter)
+{
+    if(superpixels < 3) return;
+    //color
+    int *color_hist;
+    int color_bins = 30;
+    color_hist = new int[superpixels*color_bins];
+    memset(color_hist, 0, sizeof(int)*superpixels*color_bins);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int b, g, r, huehuehue;
+            int label;
+            b = bgr[0].row(i).at<uint8_t>(j);
+            g = bgr[1].row(i).at<uint8_t>(j);
+            r = bgr[2].row(i).at<uint8_t>(j);  
+            huehuehue = get_hue(r,g,b);
+            huehuehue /= 12;
+            label = labels.row(i).at<int32_t>(j);
+            color_hist[label*color_bins + huehuehue]++;
+        }
+    }
+
+    //texture
+    Size gabor_window(64,64);
+    vector<Mat> gabors;
+    vector<Mat> responses;
+    int gabor_bins = 30;
+    for( int i = 0; i < gabor_bins; i++)
+    {
+        Mat resp;
+        Mat cur = getGaborKernel(gabor_window, 10, i*(CV_PI/gabor_bins), 3, 1.0, 0, CV_64F);
+        gabors.push_back(cur);
+        filter2D(img, resp, CV_8U, cur);
+        //myshow("asd"+to_string(i), cur);
+        responses.push_back(resp);
+        //myshow("gabor resp"+to_string(i), resp);
+    }
+
+    int *gabor_hist;
+    gabor_hist = new int[superpixels*gabor_bins];
+    memset(gabor_hist, 0, sizeof(int)*superpixels*gabor_bins);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int label;
+            label = labels.row(i).at<int32_t>(j);
+            for( int k = 0; k < gabor_bins; k++)
+            {
+                double cur_gabor_resp = (double) responses[k].row(i).at<uint8_t>(j) / 255.0;
+                cur_gabor_resp -= 0.5;
+                if( abs(cur_gabor_resp) > 0.25)
+                {
+                    gabor_hist[label*gabor_bins + k]++;
+                }
+            }
+        }
+    }
+
+    //edge
+    Mat gray_img;
+    cvtColor( img, gray_img, CV_BGR2GRAY );
+    Mat edgex, edgey, abs_edgex, abs_edgey;
+    Sobel(gray_img, edgex, CV_16S, 1, 0);
+    Sobel(gray_img, edgey, CV_16S, 0, 1);
+    convertScaleAbs( edgex, abs_edgex );
+    convertScaleAbs( edgey, abs_edgey );
+    Mat abs_edge;
+    addWeighted( abs_edgex, 0.5, abs_edgey, 0.5, 0, abs_edge);
+
+    myshow("edge", abs_edge);
+    printf("%d\n", abs_edge.type());
+
+    //center of MASS
+    double *centerx, *centery;
+    int *countpixels;
+
+    centerx = new double[superpixels];
+    centery = new double[superpixels];
+    countpixels = new int[superpixels];
+    memset(centerx, 0, sizeof(double)*superpixels);
+    memset(centery, 0, sizeof(double)*superpixels);
+    memset(countpixels, 0, sizeof(int)*superpixels);
+
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            centerx[labels.row(i).at<int32_t>(j)] += j;
+            centery[labels.row(i).at<int32_t>(j)] += i;
+            
+            countpixels[labels.row(i).at<int32_t>(j)]++;
+        }
+    }
+
+    
+    for(int i = 0; i < superpixels; i++)
+    {
+        centerx[i] /= countpixels[i];
+        centery[i] /= countpixels[i];
+    }
+
+    double min_graph_dist = INFINITY;
+    for(int i = 0; i < superpixels; i++)
+    {
+        for( int j = 0; j < superpixels; j++)
+        {
+            if(j == i) continue;
+            double graph_dist_x = abs(centerx[i]-centerx[j]);
+            double graph_dist_y = abs(centery[i]-centery[j]);
+            double graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
+
+            if(graph_dist < min_graph_dist)
+            {
+                min_graph_dist = graph_dist;
+            }
+        }
+    }
+
+    vector<uint32_t> labels_vec;
+    vector<uint8_t> abs_edge_vec;
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            labels_vec.push_back( labels.row(i).at<uint32_t>(j));
+            abs_edge_vec.push_back( abs_edge.row(i).at<uint8_t>(j));
+        }
+    }
+    
+    //merge
+    //TODO: EQUIVALENCE SET ŞEYSİ YAPILACAK
+    int* equivalence;
+    equivalence = new int[superpixels];
+    for(int i = 0; i < superpixels; i++)
+    {
+        double min_dist = INFINITY;
+        int min_dist_j =0;
+        for( int j = 0; j < superpixels; j++)
+        {
+            if(j == i) continue;
+            double dist = 0;
+            double graph_dist_x = abs(centerx[i]-centerx[j]);
+            double graph_dist_y = abs(centery[i]-centery[j]);
+            double graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
+
+            if(graph_dist < (3500*250)/superpixels)
+            {
+                for(int k = 0; k < gabor_bins; k++)
+                {
+                    double gabor_dist = abs(
+                                        gabor_hist[i*gabor_bins + k] - 
+                                        gabor_hist[j*gabor_bins + k]);
+                    dist += 50*gabor_dist*gabor_dist/sqrt(superpixels);
+                }
+
+                for(int k = 0; k < color_bins; k++)
+                {
+                    double color_dist = abs(
+                                        color_hist[i*color_bins + k] - 
+                                        color_hist[j*color_bins + k]);
+
+                    dist += 50*color_dist*color_dist/sqrt(superpixels);
+                }
+                double edge_dist;
+                edge_dist = edge_penalty( i, j, labels_vec, abs_edge_vec, labels.rows, labels.cols);
+
+                dist += (gabor_bins+color_bins)*graph_dist*superpixels;
+                dist += superpixels*superpixels*edge_dist/3500;
+            }
+            else
+            {
+                dist = -1;
+            }
+            
+            dist = sqrt(dist);
+            if(dist < min_dist && dist > 0)
+            {
+                min_dist = dist;
+                min_dist_j = j;
+            }
+        }
+        printf("%d/%d\n",i,superpixels);
+        equivalence[i] = min_dist_j;
+    }
+
+    for(int i = 0; i < superpixels; i++)
+    {
+        if(equivalence[i] == equivalence[ equivalence[i] ])
+            printf("<<<%d \n", i);
+    }
+
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int lbl = labels.row(i).at<int32_t>(j);
+
+            if( lbl > equivalence[lbl])
+                labels.row(i).at<int32_t>(j) = equivalence[lbl];
+        }
+    }
+
+        printf("neydi %d\n",superpixels);
+    refresh_labels(labels, superpixels);
+        printf("ne oldu %d\n",superpixels);
+}
 
 
 
