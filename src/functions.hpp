@@ -490,6 +490,7 @@ void merge_labels(  Mat &labels,
 
         //if(equivalence[i] == min_dist_j && equivalence[min_dist_j] == i) printf("yo/n");
     }
+    //printf("%d-%d\n", min_dist_i, min_dist_j);
 
     /*
     for(int i = 0; i < superpixels; i++)
