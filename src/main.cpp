@@ -46,7 +46,7 @@ int main( int argc, char** argv)
 
     //SLIC
     Ptr<SuperpixelSLIC> myslic;
-    myslic = createSuperpixelSLIC(seg_img, SLIC, 20, 100.0f);
+    myslic = createSuperpixelSLIC(seg_img, SLIC, 20, 8.0f);
     myslic->iterate(90);
     cv::Mat labels(seg_img.size(), CV_32SC1);
     myslic->getLabels(labels);
@@ -84,6 +84,7 @@ int main( int argc, char** argv)
             int sat = get_saturation(r,g,b) / (100/temp_bins);
             int val = get_value(r,g,b) / (100/temp_bins);
             label = labels_init.row(i).at<int32_t>(j);
+
             color_hist[label*color_bins + huehuehue]++; 
             color_hist[label*color_bins + temp_bins + sat]++;
             color_hist[label*color_bins + 2*temp_bins + val]++;
@@ -141,6 +142,7 @@ int main( int argc, char** argv)
                 double cur_gabor_resp_r = (double) bgr_gabor[2].row(i).at<uint8_t>(j) / 256.0;
                 cur_gabor_resp_r *= 10;
                 gabor_hist[anan*gabor_bins + k*gbins + 2*orientations*gbins + (int)cur_gabor_resp_r]++;
+                
             }
         }
     }

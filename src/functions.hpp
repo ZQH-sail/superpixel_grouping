@@ -415,7 +415,7 @@ void merge_labels(  Mat &labels,
             double graph_dist_y = abs(centery[i]-centery[j]);
 
             double graph_dist = 0;
-            graph_dist = sqrt(graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y)*45;
+            graph_dist = graph_dist_x*graph_dist_x + graph_dist_y*graph_dist_y;
 
             for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
             {
@@ -460,7 +460,7 @@ void merge_labels(  Mat &labels,
                     if( adjacency_matrix[(*it)*superpixels_init + *jit])
                     {
                         count++;
-                        edge_dist += penalties[(*it)*superpixels_init + *jit] / 255;
+                        edge_dist += penalties[(*it)*superpixels_init + *jit];
                     }
                 }
             }
@@ -469,6 +469,8 @@ void merge_labels(  Mat &labels,
             else
                 edge_dist = 0;
 
+            edge_dist *= (gabor_bins+color_bins)*25;
+            graph_dist *= (gabor_bins+color_bins)/25;
             double DL = Dmax + edge_dist + graph_dist;
             double DH = Dmin + 0.4*graph_dist;
             
@@ -480,6 +482,7 @@ void merge_labels(  Mat &labels,
                 min_dist_j = j;
                 min_dist_i = i;
             }
+
         }
         //if(i%100 == 0) printf("%d/%d\n",i,superpixels);
 
@@ -487,7 +490,6 @@ void merge_labels(  Mat &labels,
 
         //if(equivalence[i] == min_dist_j && equivalence[min_dist_j] == i) printf("yo/n");
     }
-    printf("%d-%d\n", min_dist_i, min_dist_j);
 
     /*
     for(int i = 0; i < superpixels; i++)
