@@ -61,7 +61,7 @@ int main( int argc, char** argv)
     //count
     int superpixels = myslic->getNumberOfSuperpixels();
     int superpixels_init = superpixels;
-    //printf("%d\n", superpixels);
+    printf("%d\n", superpixels);
 
 
     //HISTOGRAMS 
@@ -236,8 +236,8 @@ int main( int argc, char** argv)
             {
                 Scalar s = random_color(labels.row(i).at<int32_t>(j));
                 bgr[0].row(i).at<uint8_t>(j) = s[0];
-                bgr[1].row(i).at<uint8_t>(j) = s[1];
-                bgr[2].row(i).at<uint8_t>(j) = s[2];
+                //bgr[1].row(i).at<uint8_t>(j) = s[1];
+                //bgr[2].row(i).at<uint8_t>(j) = s[2];
             }
         }
     }
@@ -245,13 +245,111 @@ int main( int argc, char** argv)
 
     //merge channels
     merge(bgr, img);
-    rectangle(img, 
-              p1, 
-              p2, 
-              Scalar( 255,0,0), 2);
+   
 
+    //lazim oldu
+
+    vector<set<int> > sets(superpixels);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int set_label = labels.row(i).at<uint32_t>(j);
+            int superpix_label = labels.row(i).at<uint32_t>(j);
+            sets[set_label].insert(superpix_label);
+        }
+    }
+
+    vector<vector<int> > mins_maxs(superpixels);
+
+            printf("here4");
+
+    for(int k = 0; k < superpixels; k++)
+    {
+        int minx = 99999;
+        int miny = 99999;
+        int maxx = -1;
+        int maxy = -1;
+        for( int i = 0; i < img.rows; i++)
+        {
+            for( int j = 0; j < img.cols; j++)
+            {
+                if(labels.row(i).at<uint32_t>(j) == k)
+                {
+                    if(j < minx)
+                    {
+                        minx = j;
+                    }
+                    if(j > maxx)
+                    {
+                        maxx = j;
+                    }  
+                    if(i < miny)
+                    {
+                        miny = i;
+                    }
+                    if(i > maxy)
+                    {
+                        maxy = i;
+                    }
+
+                }
+            }
+        }
+
+        mins_maxs[k].push_back(minx);
+        mins_maxs[k].push_back(miny);
+        mins_maxs[k].push_back(maxx);
+        mins_maxs[k].push_back(maxy);
+
+    }
+    double *centerx, *centery;    
+    int *countpixels;
+
+    centerx = new double[superpixels ];
+    centery = new double[superpixels ];
+    countpixels = new int[superpixels ];
+    memset(centerx, 0, sizeof(double)*superpixels );
+    memset(centery, 0, sizeof(double)*superpixels );
+    memset(countpixels, 0, sizeof(int)*superpixels );
+
+    for( int i = 0; i < superpixels; i++)
+    {
+        for(std::set<int>::iterator it=sets[i].begin(); it!=sets[i].end(); ++it)
+        {
+            centerx[i] += centerx_init[*it]*countpixels_init[*it];
+            centery[i] += centery_init[*it]*countpixels_init[*it];
+            countpixels[i] += countpixels_init[*it];
+        }
+        centerx[i] /= countpixels[i];
+        centery[i] /= countpixels[i];
+    }
+
+  
+
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            centerx[labels.row(i).at<int32_t>(j)] += j;
+            centery[labels.row(i).at<int32_t>(j)] += i;
+            
+            countpixels[labels.row(i).at<int32_t>(j)]++;
+        }
+    }
+
+    
+    for(int i = 0; i < superpixels; i++)
+    {
+        centerx[i] /= countpixels[i];
+        centery[i] /= countpixels[i];
+    }
+
+ 
     int objs = 0;
     int detected = 0;
+    vector<double> ious;
+    vector<int> maxiou_indices;
     while(1)
     {
         int p1x,p1y,p2x,p2y, bs;
@@ -259,25 +357,63 @@ int main( int argc, char** argv)
         if( o == EOF) break;
         //printf("%d %d %d %d %d \n", p1x,p2x,p1y,p2y, bs);
         objs++;
+        double max_iou = -1;
+        int max_iou_indx = -1;
+        for( int i = 0; i < superpixels; i++)
+        {
+            Point pp1, pp2;
+            pp1.x = mins_maxs[i][0];
+            pp1.y = mins_maxs[i][1];
 
-        vector<int> ptsx;
-        ptsx.push_back(p1.x);
-        ptsx.push_back(p2.x);
-        ptsx.push_back(p1x);
-        ptsx.push_back(p2x);
-        selectSort(&ptsx[0], 4);
+            pp2.x = mins_maxs[i][2];
+            pp2.y = mins_maxs[i][3];
 
-        vector<int> ptsy;
-        ptsy.push_back(p1.y);
-        ptsy.push_back(p2.y);
-        ptsy.push_back(p1y);
-        ptsy.push_back(p2y);
-        selectSort(&ptsy[0], 4);
+            vector<int> ptsx;
+            ptsx.push_back(pp1.x);
+            ptsx.push_back(pp2.x);
+            ptsx.push_back(p1x);
+            ptsx.push_back(p2x);
+            selectSort(&ptsx[0], 4);
 
-        double intersection_area = (ptsx[2] - ptsx[1])*(ptsy[2] - ptsy[1]);
-        double union_area = (p2.x-p1.x)*(p2.y-p1.y) + (p2x-p1x)*(p2y-p1y) - intersection_area;
-        double iou = intersection_area / union_area;
-        if(iou > 0.5) detected++;
+            vector<int> ptsy;
+            ptsy.push_back(pp1.y);
+            ptsy.push_back(pp2.y);
+            ptsy.push_back(p1y);
+            ptsy.push_back(p2y);
+            selectSort(&ptsy[0], 4);
+
+            double intersection_area = (ptsx[2] - ptsx[1])*(ptsy[2] - ptsy[1]);
+            double union_area = (p2.x-p1.x)*(p2.y-p1.y) + (p2x-p1x)*(p2y-p1y) - intersection_area;
+            double iou = intersection_area / union_area;
+            if(iou > max_iou)
+            {
+                max_iou = iou;
+                max_iou_indx = i;
+            }
+                
+        }
+
+        ious.push_back(max_iou);
+        maxiou_indices.push_back(max_iou_indx);
+
+    }
+
+    for( int i = 0; i < objs; i++)
+    {
+        Point pp1, pp2;
+        pp1.x = mins_maxs[maxiou_indices[i]][0];
+        pp1.y = mins_maxs[maxiou_indices[i]][1];
+
+        pp2.x = mins_maxs[maxiou_indices[i]][2];
+        pp2.y = mins_maxs[maxiou_indices[i]][3];
+
+        printf("pp1: %d - %d ...................pp2: %d - %d\n", pp1.x, pp1.y, pp2.x, pp2.y);
+        rectangle(img, pp1, pp2, Scalar( 255,0,0), 2);
+    }
+
+    for(int i = 0; i < objs; i++)
+    {
+        if(ious[i] >= 0.5) detected++;
     }
     printf("detected: %d\n", detected);
     printf("objects: %d\n", objs);
