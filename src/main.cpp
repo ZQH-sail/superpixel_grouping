@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/plot.hpp>
 #include <vector>
 #include <string> 
 #include <inttypes.h>
@@ -40,7 +39,8 @@ int main( int argc, char** argv)
     Mat img, seg_img;
     img = imread(fname, CV_LOAD_IMAGE_COLOR);
 
-    FILE *f = fopen(("./data/"+a+".txt").c_str(), "r");
+    FILE *f = fopen(("./data/"+a+".txt").c_str(), "r+");
+    if(!f) printf("null anam");
     //preprocess
     GaussianBlur( img, seg_img, Size( 7, 7), 0, 0 );
 
@@ -60,15 +60,167 @@ int main( int argc, char** argv)
 
     //count
     int superpixels = myslic->getNumberOfSuperpixels();
+    int superpixels_init = superpixels;
     //printf("%d\n", superpixels);
 
+
+    //HISTOGRAMS 
+    //color
+    int *color_hist;
+    int temp_bins = 20;
+    int color_bins = temp_bins*3;
+    color_hist = new int[superpixels_init*color_bins];
+    memset(color_hist, 0, sizeof(int)*superpixels_init*color_bins);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int b, g, r, huehuehue;
+            int label;
+            b = bgr[0].row(i).at<uint8_t>(j);
+            g = bgr[1].row(i).at<uint8_t>(j);
+            r = bgr[2].row(i).at<uint8_t>(j);  
+            huehuehue = get_hue(r,g,b) / (360/temp_bins);
+            int sat = get_saturation(r,g,b) / (100/temp_bins);
+            int val = get_value(r,g,b) / (100/temp_bins);
+            label = labels_init.row(i).at<int32_t>(j);
+            color_hist[label*color_bins + huehuehue]++; 
+            color_hist[label*color_bins + temp_bins + sat]++;
+            color_hist[label*color_bins + 2*temp_bins + val]++;
+        }
+    }
+
+
+    //texture
+    Size gabor_window(64,64);
+    vector<Mat> gabors;
+    vector<Mat> responses;
+    int orientations = 8;
+    int gbins = 10;
+    int gabor_bins = orientations*gbins*3;
+    for( int i = 0; i < orientations; i++)
+    {
+        Mat resp;
+        Mat cur = getGaborKernel(gabor_window, 10, i*(CV_PI/gabor_bins), 3, 1.0, 0, CV_64F);
+        gabors.push_back(cur);
+        filter2D(img, resp, CV_8U, cur);
+        //myshow("asd"+to_string(i), cur);
+        responses.push_back(resp);
+        //myshow("gabor resp"+to_string(i), resp);
+    }
+
+    vector<std::vector<Mat> > bgr_gabors; //destination array
+    for(int i = 0; i < orientations; i++)
+    {
+        std::vector<Mat> bgr_gabor;
+        split(responses[i],bgr_gabor); //split source  
+        bgr_gabors.push_back(bgr_gabor);
+    }
+
+    int *gabor_hist;
+    gabor_hist = new int[superpixels_init*gabor_bins];
+    memset(gabor_hist, 0, sizeof(int)*superpixels_init*gabor_bins);
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            int anan;
+            anan = labels_init.row(i).at<int32_t>(j);
+            for( int k = 0; k < orientations; k++)
+            {
+                std::vector<Mat> bgr_gabor = bgr_gabors[k];
+                //b
+                double cur_gabor_resp_b = (double) bgr_gabor[0].row(i).at<uint8_t>(j) / 256.0;
+                cur_gabor_resp_b *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + (int)cur_gabor_resp_b]++;
+                //g
+                double cur_gabor_resp_g = (double) bgr_gabor[1].row(i).at<uint8_t>(j) / 256.0;
+                cur_gabor_resp_g *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + orientations*gbins + (int)cur_gabor_resp_g]++;
+                //r
+                double cur_gabor_resp_r = (double) bgr_gabor[2].row(i).at<uint8_t>(j) / 256.0;
+                cur_gabor_resp_r *= 10;
+                gabor_hist[anan*gabor_bins + k*gbins + 2*orientations*gbins + (int)cur_gabor_resp_r]++;
+            }
+        }
+    }
+
+
+    //edge
+    Mat gray_img;
+    cvtColor( img, gray_img, CV_BGR2GRAY );
+    Mat edgex, edgey, abs_edgex, abs_edgey;
+    Sobel(gray_img, edgex, CV_16S, 1, 0);
+    Sobel(gray_img, edgey, CV_16S, 0, 1);
+    convertScaleAbs( edgex, abs_edgex );
+    convertScaleAbs( edgey, abs_edgey );
+    Mat abs_edge;
+    addWeighted( abs_edgex, 0.5, abs_edgey, 0.5, 0, abs_edge);
+
+    vector<uint32_t> labels_init_vec;
+    vector<uint8_t> abs_edge_vec;
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            labels_init_vec.push_back( labels_init.row(i).at<uint32_t>(j));
+            abs_edge_vec.push_back( abs_edge.row(i).at<uint8_t>(j));
+        }
+    }
+
+    duble* penalties = new duble[superpixels_init*superpixels_init];
+    int* adjacency_matrix = new int[superpixels_init*superpixels_init];
+    memset(adjacency_matrix, 0, sizeof(int)*superpixels_init*superpixels_init);
+    memset(penalties, 0, sizeof(duble)*superpixels_init*superpixels_init);
+    
+    all_edge_penalties( labels_init_vec, abs_edge_vec, img.rows, img.cols, penalties, adjacency_matrix, superpixels_init);
+
+    double *centerx_init, *centery_init;
+    int *countpixels_init;
+
+    centerx_init = new double[superpixels_init];
+    centery_init = new double[superpixels_init];
+    countpixels_init = new int[superpixels_init];
+    memset(centerx_init, 0, sizeof(double)*superpixels_init);
+    memset(centery_init, 0, sizeof(double)*superpixels_init);
+    memset(countpixels_init, 0, sizeof(int)*superpixels_init);
+
+    for( int i = 0; i < img.rows; i++)
+    {
+        for( int j = 0; j < img.cols; j++)
+        {
+            centerx_init[labels_init.row(i).at<int32_t>(j)] += j;
+            centery_init[labels_init.row(i).at<int32_t>(j)] += i;
+            
+            countpixels_init[labels_init.row(i).at<int32_t>(j)]++;
+        }
+    }
+
+    for(int i = 0; i < superpixels_init; i++)
+    {
+        centerx_init[i] /= countpixels_init[i];
+        centery_init[i] /= countpixels_init[i];
+    }
+
+
+
     //merge
-    int superpixels_init = superpixels;
     Point p1, p2;
-    for( int i = 0; i < 50; i++)
-        merge_labels(labels, img, bgr, superpixels, labels_init, superpixels_init, p1, p2);
+    for( int i = 0; i < 1000; i++)
+    {
+        merge_labels(   labels, img, bgr, 
+                        superpixels, labels_init, 
+                        superpixels_init, p1, p2, 
+                        color_hist, gabor_hist, 
+                        color_bins, gabor_bins, 
+                        adjacency_matrix, penalties, 
+                        centerx_init, centery_init, 
+                        countpixels_init);
+
+    }
 
     Mat new_out = contour_at_sevgilim( labels);
+
     //POST
     for( int i = 0; i < img.rows; i++)
     {
@@ -83,9 +235,9 @@ int main( int argc, char** argv)
             else
             {
                 Scalar s = random_color(labels.row(i).at<int32_t>(j));
-                //bgr[0].row(i).at<uint8_t>(j) = s[0];
-                //bgr[1].row(i).at<uint8_t>(j) = s[1];
-                //bgr[2].row(i).at<uint8_t>(j) = s[2];
+                bgr[0].row(i).at<uint8_t>(j) = s[0];
+                bgr[1].row(i).at<uint8_t>(j) = s[1];
+                bgr[2].row(i).at<uint8_t>(j) = s[2];
             }
         }
     }
@@ -131,7 +283,7 @@ int main( int argc, char** argv)
     printf("objects: %d\n", objs);
 
     //output
-    mysave(a, img);
     fclose(f);
+    mysave(a, img);
     return 0;
 }
