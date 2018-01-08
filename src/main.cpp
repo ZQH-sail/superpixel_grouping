@@ -61,7 +61,6 @@ int main( int argc, char** argv)
     //count
     int superpixels = myslic->getNumberOfSuperpixels();
     int superpixels_init = superpixels;
-    printf("%d\n", superpixels);
 
 
     //HISTOGRAMS 
@@ -264,7 +263,6 @@ int main( int argc, char** argv)
 
     vector<vector<int> > mins_maxs(superpixels);
 
-            printf("here4");
 
     for(int k = 0; k < superpixels; k++)
     {
@@ -409,7 +407,6 @@ int main( int argc, char** argv)
         pp2.x = mins_maxs[maxiou_indices[i]][2];
         pp2.y = mins_maxs[maxiou_indices[i]][3];
 
-        printf("pp1: %d - %d ...................pp2: %d - %d\n", pp1.x, pp1.y, pp2.x, pp2.y);
         rectangle(img, pp1, pp2, Scalar( 255,0,0), 2);
     }
 
@@ -419,6 +416,7 @@ int main( int argc, char** argv)
     }
     printf("detected: %d\n", detected);
     printf("objects: %d\n", objs);
+    printf("superpixels: %d\n", superpixels);
 
     //output
     fclose(f);

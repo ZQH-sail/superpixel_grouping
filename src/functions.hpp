@@ -471,7 +471,8 @@ void merge_labels(  Mat &labels,
 
             edge_dist *= (gabor_bins+color_bins)*25;
             graph_dist *= (gabor_bins+color_bins)/25;
-            double DL = Dmax + edge_dist + graph_dist;
+            //double DL = Dmax + edge_dist + graph_dist;
+            double DL = edge_dist + graph_dist;
             double DH = Dmin + 0.4*graph_dist;
             
             Dtotal = ro*DL + (1 - ro)*DH + 2*(countpixels[i] + countpixels[j]);
